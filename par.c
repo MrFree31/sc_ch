@@ -50,6 +50,6 @@ int main(int argc, char *argv[]){
     }
     
     fclose(f1);
-    printf("Чек: %s %s, сумма: %.2lf\n",check.date,check.shop,check.amount);
+    printf("{\"date\":\"%s\",\"shop\":\"%s\",\"amount\":%.2lf}\n",check.date,check.shop,check.amount);
     return 0;
 }
