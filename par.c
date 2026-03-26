@@ -9,6 +9,15 @@ typedef struct receipt{//Структура чека
     double amount;
 }receipt;
 
+void magazin(char *in, char *out){//Выделение магазина
+    int i = 0;
+    while(in[i]&& in[i]!= '\n' && i<127){
+        out[i] = in[i];
+        i++;
+    }
+    out[i] = '\0';
+}
+
 int main(int argc, char *argv[]){
     SetConsoleOutputCP(CP_UTF8);
     //Файлы не загружены - прекращаем выполнение
@@ -19,17 +28,30 @@ int main(int argc, char *argv[]){
 
     receipt check;
     FILE *f1 = fopen(argv[argc-1],"r");
-    //чтение магазина
-    fgets(check.shop,sizeof(check.shop),f1);
-    //чтение даты
-    fgets(check.date,sizeof(check.date),f1);
 
-    char line[24];//temp строка
-    //чтение суммы
+    //чтение магазина
+    char line_s[64];//temp строка магазин
+    char *p;//Указатель на вхождение ООО/ИП
+    while(fgets(line_s,sizeof(line_s),f1)){//Читаем строку из файла
+        if(p = strstr(line_s,"ООО")){//Возвращает указатель, а не NULL - хорошо. 
+            magazin(line_s,check.shop);//strstr - поиск "Подстроки" и возврат указателя
+        }
+        if(p = strstr(line_s,"ИП")){//В чеках нет названий, есть только ип, ооо и тд. Их и берём.
+            magazin(line_s,check.shop);
+        }
+    }
+    
+    
+    //чтение даты
+    //fgets(check.date,sizeof(check.date),f1);
+
+    char line_d[24];//temp строка даты
+
+   //чтение суммы
     fgets(line,sizeof(line),f1);
     line[strcspn(line,"\n")]='\0';
     check.date[strcspn(check.date,"\n")]='\0';
-    check.shop[strcspn(check.shop,"\n")]='\0';
+  check.shop[strcspn(check.shop,"\n")]='\0';
 
 
     //Проверяем числа и пробел в строке с Total
