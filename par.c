@@ -26,49 +26,63 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    receipt check;
+    receipt check = {"","",0.0};
     FILE *f1 = fopen(argv[argc-1],"r");
+    if(f1 == NULL){
+        printf("ФАЙЛ ПУСТ ИЛИ ЕЩЁ ЧТО-ТО\n");
+        return 1;
+    }
 
     //чтение магазина
-    char line_s[64];//temp строка магазин
-    char *p;//Указатель на вхождение ООО/ИП
-    while(fgets(line_s,sizeof(line_s),f1)){//Читаем строку из файла
-        if(p = strstr(line_s,"ООО")){//Возвращает указатель, а не NULL - хорошо. 
+    char line_s[128];//temp строка магазин
+        while(fgets(line_s,sizeof(line_s),f1)){//Читаем строку из файла
+        if((strstr(line_s,"ООО"))||(strstr(line_s,"МЕСТО РАСЧЁТОВ"))||
+        (strstr(line_s,"ИП"))||(strstr(line_s,"АО"))||(strstr(line_s,"МАГАЗИН"))){//Возвращает указатель, а не NULL - хорошо. 
             magazin(line_s,check.shop);//strstr - поиск "Подстроки" и возврат указателя
-        }
-        if(p = strstr(line_s,"ИП")){//В чеках нет названий, есть только ип, ооо и тд. Их и берём.
-            magazin(line_s,check.shop);
-        }
+            break;
+        }//Если в чеках нет названий, есть только ип, ооо и тд. Их и берём.
     }
-    
+    rewind(f1);//Перечитываем файл по новой.(Указатель убежал при предыдущих проверке)
     
     //чтение даты
     //fgets(check.date,sizeof(check.date),f1);
-
-    char line_d[24];//temp строка даты
-
-   //чтение суммы
-    fgets(line,sizeof(line),f1);
-    line[strcspn(line,"\n")]='\0';
-    check.date[strcspn(check.date,"\n")]='\0';
-  check.shop[strcspn(check.shop,"\n")]='\0';
-
-
-    //Проверяем числа и пробел в строке с Total
-    char *p = strchr(line,'=');//Находим указатель на =
-    if(!p){
-        p = line;
-        while(*p && !isdigit(*p)) p++;//Не нашли - идём просто до числа
-    }
-    else{
-        p++;//нашли =, значит передвинем указатель с =, потому что atof() числа преобразует, а не чары.
-    }
-
-    if(*p){
-        check.amount = atof(p);//Переводим строку в число
-    }
-    else{
-        check.amount = 0;//Нет чисел - ноль
+    char *p;
+    char line[256];//temp строка даты и суммы
+    int date_flag = 0,total_flag = 0;//Большая девятка
+    while(fgets(line,sizeof(line),f1)){
+        if(date_flag == 0){
+            p = line;
+            while(*p){
+                if(isdigit(p[0]) && isdigit(p[1]) && p[2] == '.' &&
+                isdigit(p[3]) && isdigit(p[4]) && p[5] == '.' &&
+                isdigit(p[6]) && isdigit(p[7]) && isdigit(p[8]) && isdigit(p[9])){
+                    if((p == line || !isdigit(*(p-1))) && (!isdigit(p[10]) || p[10]=='\0' || p[10]=='\n')){//проверка, что указатель строке, что до строки нет чисел и после найденных чисел нет.
+                        strncpy(check.date,p,10);
+                        date_flag = 1;
+                        break;
+                    }
+                }
+                p++;
+            }
+        }
+        //Проверяем числа и пробел в строке с Total
+        if(!total_flag && (strstr(line,"ИТОГО")||strstr(line,"ИТОГ")||strstr(line,"Итого")||strstr(line,"Итог"))){
+            char *summ = strchr(line,'=');//Находим указатель на =
+            if(summ){
+                summ++;//Пропускаем =
+                while(*summ == ' '){
+                    summ++; //пропуск пробелов
+                }
+            }   
+            else{    
+                summ = line;
+                while(*summ && !isdigit(*summ)) summ++;//Не нашли - идём просто до числа
+            }   
+            if(*summ){
+                check.amount = atof(summ);//Переводим строку в число
+                total_flag = 1;
+            }
+        }
     }
     
     fclose(f1);
