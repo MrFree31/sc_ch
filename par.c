@@ -18,6 +18,25 @@ void magazin(char *in, char *out){//Выделение магазина
     out[i] = '\0';
 }
 
+void kavich_delete(char *in, char *out, int size){// В навании магазина bread полный - кавычки нарушают структуру{"date":"23.03.2026","shop":"ООО "Продукты у дома"","amount":426.37}
+    int i = 0;
+    while(*in && i < size - 1){// - 1 для нуля-терминатора
+        if(*in == '"'){//проверяем значение по указателю
+            if(i < size - 2){//добааляем 2 символа - проверяем, что не перполниться buffer
+                out[i] = '\\';//добавляем на место кавычек \ и " , '\"'
+                i++;
+                out[i] = '"';
+                i++;
+            }
+        }
+        else{
+            out[i] = *in;// иначе символ добавляем
+        }
+        in++;//двигаем указатель
+    }
+    out[i] = '\0';
+}
+
 int main(int argc, char *argv[]){
     SetConsoleOutputCP(CP_UTF8);
     //Файлы не загружены - прекращаем выполнение
@@ -86,6 +105,10 @@ int main(int argc, char *argv[]){
     }
     
     fclose(f1);
-    printf("{\"date\":\"%s\",\"shop\":\"%s\",\"amount\":%.2lf}\n",check.date,check.shop,check.amount);
+
+    char buff[256];//Буфер в два раза больше - могут быть доп значения в строке и не переполнился
+    kavich_delete(check.shop, buff, sizeof(buff));
+
+    printf("{\"date\":\"%s\",\"shop\":\"%s\",\"amount\":%.2lf}\n",check.date,buff/*check.shop*/,check.amount);//Поменяли значение из нашей структуры на Buff  
     return 0;
 }
