@@ -35,5 +35,29 @@ int main(int argc, char *argv[]){
         p += 9; // Перепрыгиваем (двигаем указатель) как раз нашу подстроку "amount": - 9 символов
         amount = atof(p);
     }
+    
+    //vvvv Работа с SQLite vvvv
+    sqlite3 *table = NULL; //Структура таблицы
+    char *errror = NULL; //Вывод ошибок. Нужен для запросов
+    int compl; // Возвращаемое значение, типо return. 0 - хорошо, остальное - ошибки. Обозначим, как compl(ete), типо завершилось или нет
+    sqlite3_stmt *call = NULL; //Структура запроса на обработку таблицы. stmt - высказывание ~ запрос
+
+    compl = sqlite3_open("receipts.db", &table); //Создание файла таблицы. db - расширение datebase
+    if(compl != 0){ //Проверка выполнения
+        printf("Ошибка! Не удалось создать файл под таблицу (%s)\n",sqlite3_errmsg(table)); //Уведомление об ошибке и код ошибки в скобках. sqlite3_errmsg возвращает код ошибки, который сохраняется в структуру каждый раз, когда и происходит ошибка.
+        return 1;
+    }
+
+    char *create_sql = "CREATE TABLE IF NOT EXISTS receipts (""id INTEGER PRIMARY KEY AUTOINCREMENT,""date TEXT NOT NULL,""shop TEXT NOT NULL,""amount REAL NOT NULL"")"; //Запрос, на создание, проверку существования. Задание имени, значений в строках 
+    //not null - запреж на создание пустых строк, real - аналог double? Primary key - создание столбца уникальных значений для сортировки.
+    compl = sqlite3_exec(table, create_sql, NULL, NULL, &errror); //Создаём таблицу со строками, как в вышесоставленном запросе.
+    if(compl != 0){ //Проверка выполнения
+        printf("Ошибка! Не удалось создать таблицу (%s)\n", errror);
+        sqlite3_free(errror);
+        sqlite3_close(table);
+        return 1;
+    }
+
+
     return 0;
 }
