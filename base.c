@@ -105,6 +105,39 @@ int main(int argc, char *argv[]){
     }
 
     sqlite3_finalize(call); //Завершение - finalize запроса(стерание?)
+
+    //Вывод суммы за месяц последнего обработанного чека
+    char mm_yyyy[8]; //Дата месяц и год (mm.yyyy\0). 8 значений
+    strncpy(mm_yyyy, date+3, 7); //Сдвигаем указатель и берём 7 символов месяца и года
+    mm_yyyy[7] = '\0';
+
+    char date_form[12];
+    sprintf(date_form, "%%.%s", mm_yyyy); // "%%" - выдаст "%" без интерпретации как служебный символ. sprintf \0 автоматом добавляет
+    //Оброз строки. На месте % sqlite любое значение берёт, как в Экселе.
+    char sum_table[128];//Запрос суммы
+    sprintf(sum_table, "SELECT SUM(amount) FROM receipts WHERE date LIKE '%s'", date_form); //Запрос суммы всех ячеек amount в строках с датой, как у нашего чека.
+    sqlite3_stmt *sum_call;
+    compl = sqlite3_prepare_v2(table, sum_table, -1, &sum_call, NULL);
+    if(compl !=0){
+        printf("Ошибка! Не удалось сформировать запрос суммирования (%s)\n", sqlite3_errmsg(table));
+        sqlite3_close(table);
+        return 1;
+    }
+    compl = sqlite3_step(sum_call);
+    if(compl != SQLITE_ROW && compl != SQLITE_DONE){ // SQLITE_ROW Чтение строки первой, в данном случае со значением суммы
+        printf("Ошибка! Не удалось исполнить запрос суммы (%s)\n", sqlite3_errmsg(table));
+        sqlite3_close(table);
+        return 1;
+    }
+
+    if(compl == SQLITE_ROW){
+        double month = sqlite3_column_double(sum_call, 0); // sqlite3_column_double вернёт значение с первым "0" и единственным значение из запроса sum_call в формате double
+        printf("Сумма за месяц %s: %.2lf\n", mm_yyyy, month);
+    }
+    else{//Строки(row) нет, сразу done - суммы не будет
+        printf("Нет значений суммы за данный месяц (%s)", mm_yyyy);
+    }
+    sqlite3_finalize(sum_call);
     sqlite3_close(table); //Закрытие таблицы.
 
     return 0;
